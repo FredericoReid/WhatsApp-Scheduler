@@ -19,7 +19,6 @@ const statusBox = document.getElementById('status-box');
 const qrCodeImage = document.getElementById('qrcode-image');
 
 let intervalId;
-let apiKey = env.X_API_KEY;
 
 function updateStatus(state) {
     statusBox.textContent = state;
@@ -32,51 +31,63 @@ function updateStatus(state) {
     }
 }
 
-function checkSessionStatus(userId) {
-    fetch(`http://localhost:8080/session/status/${userId}`, {
-        method: 'GET'
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data);
-        if (data.success && data.state === 'CONNECTED') {
+//WhatsApp session status
+async function checkSessionStatus(userIdValue) {
+    try {
+        const response = await fetch(`http://localhost:8080/status/${userIdValue}`, { method: 'GET' });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.message === 'session_connected') {
+            console.log('Sessão iniciada com sucesso.');
             updateStatus('CONECTADO');
             clearInterval(intervalId);
-        } else if (data.message === 'session_not_connected') {
-            updateStatus('DESCONECTADO');
-            generatingQrCode(userId);
         } else {
+            console.log('Aguardando conexão...');
             updateStatus('AGUARDE...');
+            generatingQrCode(userIdValue);
         }
-    })
-    .catch(error => {
-        console.log('Erro ao verificar o status da sessão:', error);
+    } catch (error) {
+        console.log('Erro ao obter o status da sessão:', error);
         updateStatus('DESCONECTADO');
-    });
+        clearInterval(intervalId);
+    }
 }
 
-function generatingQrCode(userIdValue) {
+async function generatingQrCode(userIdValue) {
     console.log('Gerando QR Code...');
-    fetch(`http://localhost:8080/qr-code`, {
-        method: 'GET'
-    })
-    .then(response => response.blob())
-    .then(blob => {
+    try {
+        const response = await fetch(`http://localhost:8080/qr-code/${userIdValue}/image`, {
+            method: 'GET'
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        console.log('QR Code gerado com sucesso.');
+        const blob = await response.blob();
         const qrCodeImageUrl = URL.createObjectURL(blob);
-        qrCodeImage.src = qrCodeImageUrl;
-        console.log(qrCodeImage.src);
-        console.log(qrCodeImageUrl);
-    })
-    .catch(error => console.log('Erro ao obter o QR Code: ', error));
+        const qrCodeImage = document.getElementById('qrcode-image');
+        if (qrCodeImage) {
+            qrCodeImage.src = qrCodeImageUrl;
+            console.log(qrCodeImage.src);
+            console.log(qrCodeImageUrl);
+        } else {
+            console.log('Elemento de imagem QR Code não encontrado no DOM.');
+        }
+    } catch (error) {
+        console.log('Erro ao obter o QR Code: ', error);
+    }
 }
 
+//login
 loginButton.addEventListener('click', async function() {
     const userIdValue = userId.value.trim();
     console.log('ID do usuário:', userIdValue);
     if (userIdValue !== '') {
         console.log('Iniciando fetch...');
         try {
-            const response = await fetch(`http://localhost:8080/login`, {
+            const response = await fetch(`http://localhost:8080/login/${userIdValue}`, {
                 method: 'GET'
             });
             console.log('Resposta recebida:', response);
@@ -86,9 +97,9 @@ loginButton.addEventListener('click', async function() {
                 console.log('Sessão iniciada com sucesso.');
                 updateStatus('AGUARDE...');
                 setTimeout(async function(){
-                    console.log("Executado após 8 segundos");
-                    console.log('Verificando status da sessão...');
-                    await checkSessionStatus(userIdValue);
+                    await console.log("Executado após 8 segundos");
+                    await console.log('Verificando status da sessão...');
+                    intervalId = setInterval(function() { checkSessionStatus(userIdValue); }, 5000);
                 }, 8000);
             } else {
                 console.log('Erro ao iniciar sessão:', data.message);

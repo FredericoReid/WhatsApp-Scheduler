@@ -11,11 +11,11 @@ import java.io.IOException;
 public class LoginAuthenticationController {
     private final ApiService apiService;
 
-    public LoginAuthenticationController(ApiService apiService) {
-        this.apiService = apiService;
+    public LoginAuthenticationController() {
+        this.apiService = new ApiService();
     }
 
-    @GetMapping("/login")
+    @GetMapping("/login/{userId}")
     public String login(@PathVariable String userId) throws IOException, InterruptedException {
         return apiService.login(userId);
     }

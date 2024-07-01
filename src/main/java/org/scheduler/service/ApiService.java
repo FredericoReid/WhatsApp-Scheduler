@@ -5,6 +5,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 import java.io.IOException;
+import java.time.Duration;
+
 import io.github.cdimascio.dotenv.Dotenv;
 
 public class ApiService {
@@ -16,7 +18,9 @@ public class ApiService {
         Dotenv dotenv = Dotenv.load();
         this.apiURL = dotenv.get("API_URL");
         this.apiKey = dotenv.get("X_API_KEY");
-        this.client = HttpClient.newHttpClient();
+        this.client = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(15))
+        .build();
     }
 
     public String sendMessage(String message, String phoneNumber, String dateTime) throws IOException, InterruptedException {
@@ -26,14 +30,14 @@ public class ApiService {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String responseBody = response.body().toString();
+        String responseBody = response.body();
         return responseBody;
     }
 
     public String login(String userId) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(apiURL + "session/status/" + userId))
-                .headers("X-API-KEY", apiKey, "accept",  "application/json")
+                .uri(URI.create(apiURL + "session/start/" + userId))
+                .headers("x-api-key", apiKey, "accept",  "application/json")
                 .GET()
                 .build();
 
@@ -42,15 +46,26 @@ public class ApiService {
         return responseBody;
     }
 
-    public String qrCode(String userId) throws IOException, InterruptedException {
+    public byte[] qrCode(String userId) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apiURL + "session/qr/" + userId + "/image"))
-                .headers("X-API-KEY", apiKey, "accept", "image/png")
+                .headers("x-api-key", apiKey, "accept", "image/png")
+                .GET()
+                .build();
+        HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        return response.body();
+    }
+
+    public String status(String userId) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(apiURL + "session/status/" + userId))
+                .headers("x-api-key", apiKey, "accept", "application/json")
                 .GET()
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         String responseBody = response.body();
+        System.out.println("ApiService STATUS: " + responseBody);
         return responseBody;
     }
 }
