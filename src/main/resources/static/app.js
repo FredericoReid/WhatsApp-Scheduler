@@ -1,9 +1,12 @@
+let globalUserId;
+
 function generateUserId() {
     return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
 window.onload = function() {
-    document.getElementById('userId').value = generateUserId();
+    globalUserId = generateUserId();
+    document.getElementById('userId').value = globalUserId;
 };
 
 const userId = document.getElementById('userId');
@@ -114,6 +117,8 @@ loginButton.addEventListener('click', async function() {
     }
 });
 
+const form = document.getElementById('contactForm');
+
 
 
 userId.addEventListener('input', () => {
@@ -204,20 +209,25 @@ document.getElementById('contactForm').addEventListener('submit', function(event
             dateTime: dateTime.value
         };
 
-        fetch('http://localhost:3000/send-message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert('Mensagem enviada com sucesso!');
-            })
-            .catch(error => {
-                console.log('Erro:', error);
-                alert('Ocorreu um erro ao enviar a mensagem.');
-            });
+        fetch('http://localhost:8080/send-message/${globalUserId}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+              if (response.ok){
+                  alert("Mensagem enviada!");
+              }
+              if (!response.ok) {
+                  throw new Error('Erro: ' + response.status);
+              }
+              return response.json();
+        })
+        .catch(error => {
+            console.log('Erro:', error);
+            alert('Ocorreu um erro ao enviar a mensagem: ' + error);
+        });
     }
 });

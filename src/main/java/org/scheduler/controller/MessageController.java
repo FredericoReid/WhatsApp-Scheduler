@@ -1,7 +1,9 @@
 package org.scheduler.controller;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
 import org.scheduler.model.MessageForm;
 import org.scheduler.service.ApiService;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +19,14 @@ public class MessageController {
         this.apiService = new ApiService();
     }
 
-    @PostMapping("/send-message")
-    public void sendMessage(@RequestBody MessageForm messageForm) {
+    @PostMapping("/send-message/{userIdValue}")
+    public ResponseEntity sendMessage(@PathVariable String userIdValue, @RequestBody MessageForm messageForm) {
         try {
-            String message = apiService.sendMessage(messageForm.getMessage(), messageForm.getContactNumber(), messageForm.getDateTime());
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            //String message = apiService.sendMessage(messageForm.getMessage(), messageForm.getContactNumber(), messageForm.getDateTime());
+            System.out.println("DATE TIME: " + messageForm.getDateTime());
+            return ResponseEntity.status(HttpStatus.OK).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -33,7 +37,7 @@ public class MessageController {
             byte[] imageBytes = apiService.qrCode(userId);
             return ResponseEntity.ok().body(imageBytes);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            System.out.println(e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
