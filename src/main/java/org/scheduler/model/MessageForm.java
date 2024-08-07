@@ -1,5 +1,7 @@
 package org.scheduler.model;
 
+import java.time.LocalDateTime;
+
 public class MessageForm {
     private String contactNumber;
     private String message;
